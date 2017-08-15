@@ -13,7 +13,7 @@ include_directories(
 include_directories(${CHECK_INCLUDE_DIRS})
 # create test library
 add_library(${TORTURE_LIBRARY} STATIC torture.c cmdline.c)
-target_link_libraries(${TORTURE_LIBRARY} ${CMOCKA_LIBRARIES} ${CSYNC_LIBRARY} ${CSTDLIB_LIBRARY})
+target_link_libraries(${TORTURE_LIBRARY} ${CMOCKA_LIBRARIES} common ${CSYNC_LIBRARY} ${CSTDLIB_LIBRARY})
 
 set(TEST_TARGET_LIBRARIES ${TORTURE_LIBRARY})
 
@@ -44,7 +44,6 @@ add_cmocka_test(check_csync_statedb_query csync_tests/check_csync_statedb_query.
 add_cmocka_test(check_csync_commit csync_tests/check_csync_commit.cpp ${TEST_TARGET_LIBRARIES})
 
 # vio
-add_cmocka_test(check_vio_file_stat vio_tests/check_vio_file_stat.cpp ${TEST_TARGET_LIBRARIES})
 add_cmocka_test(check_vio vio_tests/check_vio.cpp ${TEST_TARGET_LIBRARIES})
 add_cmocka_test(check_vio_ext vio_tests/check_vio_ext.cpp ${TEST_TARGET_LIBRARIES})
 

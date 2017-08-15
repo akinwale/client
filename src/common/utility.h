@@ -126,6 +126,8 @@ namespace Utility {
 
     QString fileNameForGuiUse(const QString &fName);
 
+    QByteArray normalizeEtag(QByteArray etag);
+
     /**
      * @brief timeAgoInWords - human readable time span
      *

@@ -14,10 +14,8 @@
  */
 #include "config.h"
 
-#include "utility.h"
-
-#include "version.h"
-#include "configfile.h"
+#include "common/utility.h"
+#include "common/version.h"
 
 // Note:  This file must compile without QtGui
 #include <QCoreApplication>
@@ -609,20 +607,6 @@ QUrl Utility::concatUrlPath(const QUrl &url, const QString &concatPath,
         tmpUrl.setQueryItems(queryItems);
     }
     return tmpUrl;
-}
-
-Q_GLOBAL_STATIC(QString, g_configFileName)
-
-std::unique_ptr<QSettings> Utility::settingsWithGroup(const QString &group, QObject *parent)
-{
-    if (g_configFileName()->isEmpty()) {
-        // cache file name
-        ConfigFile cfg;
-        *g_configFileName() = cfg.configFile();
-    }
-    std::unique_ptr<QSettings> settings(new QSettings(*g_configFileName(), QSettings::IniFormat, parent));
-    settings->beginGroup(group);
-    return settings;
 }
 
 } // namespace OCC

@@ -16,7 +16,6 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
-#include "owncloudlib.h"
 #include <QString>
 #include <QByteArray>
 #include <QDateTime>
@@ -36,22 +35,22 @@ Q_DECLARE_LOGGING_CATEGORY(lcUtility)
  *  @{
  */
 namespace Utility {
-    OWNCLOUDSYNC_EXPORT void sleep(int sec);
-    OWNCLOUDSYNC_EXPORT void usleep(int usec);
-    OWNCLOUDSYNC_EXPORT QString formatFingerprint(const QByteArray &, bool colonSeparated = true);
-    OWNCLOUDSYNC_EXPORT void setupFavLink(const QString &folder);
-    OWNCLOUDSYNC_EXPORT bool writeRandomFile(const QString &fname, int size = -1);
-    OWNCLOUDSYNC_EXPORT QString octetsToString(qint64 octets);
-    OWNCLOUDSYNC_EXPORT QByteArray userAgentString();
-    OWNCLOUDSYNC_EXPORT bool hasLaunchOnStartup(const QString &appName);
-    OWNCLOUDSYNC_EXPORT void setLaunchOnStartup(const QString &appName, const QString &guiName, bool launch);
+    void sleep(int sec);
+    void usleep(int usec);
+    QString formatFingerprint(const QByteArray &, bool colonSeparated = true);
+    void setupFavLink(const QString &folder);
+    bool writeRandomFile(const QString &fname, int size = -1);
+    QString octetsToString(qint64 octets);
+    QByteArray userAgentString();
+    bool hasLaunchOnStartup(const QString &appName);
+    void setLaunchOnStartup(const QString &appName, const QString &guiName, bool launch);
 
     /**
      * Return the amount of free space available.
      *
      * \a path must point to a directory
      */
-    OWNCLOUDSYNC_EXPORT qint64 freeDiskSpace(const QString &path);
+    qint64 freeDiskSpace(const QString &path);
 
     /**
      * @brief compactFormatDouble - formats a double value human readable.
@@ -61,14 +60,14 @@ namespace Utility {
      * @param unit an optional unit that is appended if present.
      * @return the formatted string.
      */
-    OWNCLOUDSYNC_EXPORT QString compactFormatDouble(double value, int prec, const QString &unit = QString::null);
+    QString compactFormatDouble(double value, int prec, const QString &unit = QString::null);
 
     // porting methods
-    OWNCLOUDSYNC_EXPORT QString escape(const QString &);
+    QString escape(const QString &);
 
     // conversion function QDateTime <-> time_t   (because the ones builtin work on only unsigned 32bit)
-    OWNCLOUDSYNC_EXPORT QDateTime qDateTimeFromTime_t(qint64 t);
-    OWNCLOUDSYNC_EXPORT qint64 qDateTimeToTime_t(const QDateTime &t);
+    QDateTime qDateTimeFromTime_t(qint64 t);
+    qint64 qDateTimeToTime_t(const QDateTime &t);
 
     /**
      * @brief Convert milliseconds duration to human readable string.
@@ -81,8 +80,8 @@ namespace Utility {
      * durationToDescriptiveString2 uses two units where possible, so
      * "5 minutes 43 seconds" or "1 month 3 days".
      */
-    OWNCLOUDSYNC_EXPORT QString durationToDescriptiveString1(quint64 msecs);
-    OWNCLOUDSYNC_EXPORT QString durationToDescriptiveString2(quint64 msecs);
+    QString durationToDescriptiveString1(quint64 msecs);
+    QString durationToDescriptiveString2(quint64 msecs);
 
     /**
      * @brief hasDarkSystray - determines whether the systray is dark or light.
@@ -94,38 +93,38 @@ namespace Utility {
      *
      * @return bool which is true for systems with dark systray.
      */
-    OWNCLOUDSYNC_EXPORT bool hasDarkSystray();
+    bool hasDarkSystray();
 
     // convenience OS detection methods
-    OWNCLOUDSYNC_EXPORT bool isWindows();
-    OWNCLOUDSYNC_EXPORT bool isMac();
-    OWNCLOUDSYNC_EXPORT bool isUnix();
-    OWNCLOUDSYNC_EXPORT bool isLinux(); // use with care
-    OWNCLOUDSYNC_EXPORT bool isBSD(); // use with care, does not match OS X
+    bool isWindows();
+    bool isMac();
+    bool isUnix();
+    bool isLinux(); // use with care
+    bool isBSD(); // use with care, does not match OS X
 
-    OWNCLOUDSYNC_EXPORT QString platformName();
+    QString platformName();
     // crash helper for --debug
-    OWNCLOUDSYNC_EXPORT void crash();
+    void crash();
 
     // Case preserving file system underneath?
     // if this function returns true, the file system is case preserving,
     // that means "test" means the same as "TEST" for filenames.
     // if false, the two cases are two different files.
-    OWNCLOUDSYNC_EXPORT bool fsCasePreserving();
+    bool fsCasePreserving();
 
     // Check if two pathes that MUST exist are equal. This function
     // uses QDir::canonicalPath() to judge and cares for the systems
     // case sensitivity.
-    OWNCLOUDSYNC_EXPORT bool fileNamesEqual(const QString &fn1, const QString &fn2);
+    bool fileNamesEqual(const QString &fn1, const QString &fn2);
 
     // Call the given command with the switch --version and rerun the first line
     // of the output.
     // If command is empty, the function calls the running application which, on
     // Linux, might have changed while this one is running.
     // For Mac and Windows, it returns QString()
-    OWNCLOUDSYNC_EXPORT QByteArray versionOfInstalledBinary(const QString &command = QString());
+    QByteArray versionOfInstalledBinary(const QString &command = QString());
 
-    OWNCLOUDSYNC_EXPORT QString fileNameForGuiUse(const QString &fName);
+    QString fileNameForGuiUse(const QString &fName);
 
     /**
      * @brief timeAgoInWords - human readable time span
@@ -135,9 +134,9 @@ namespace Utility {
      *
      * If the second parameter is ommitted, the current time is used.
      */
-    OWNCLOUDSYNC_EXPORT QString timeAgoInWords(const QDateTime &dt, const QDateTime &from = QDateTime());
+    QString timeAgoInWords(const QDateTime &dt, const QDateTime &from = QDateTime());
 
-    class OWNCLOUDSYNC_EXPORT StopWatch
+    class StopWatch
     {
     private:
         QMap<QString, quint64> _lapTimes;
@@ -159,16 +158,12 @@ namespace Utility {
     /**
      * @brief Sort a QStringList in a way that's appropriate for filenames
      */
-    OWNCLOUDSYNC_EXPORT void sortFilenames(QStringList &fileNames);
+    void sortFilenames(QStringList &fileNames);
 
     /** Appends concatPath and queryItems to the url */
-    OWNCLOUDSYNC_EXPORT QUrl concatUrlPath(
+    QUrl concatUrlPath(
         const QUrl &url, const QString &concatPath,
         const QList<QPair<QString, QString>> &queryItems = (QList<QPair<QString, QString>>()));
-
-    /**  Returns a new settings pre-set in a specific group.  The Settings will be created
-         with the given parent. If no parent is specified, the caller must destroy the settings */
-    OWNCLOUDSYNC_EXPORT std::unique_ptr<QSettings> settingsWithGroup(const QString &group, QObject *parent = 0);
 }
 /** @} */ // \addtogroup
 }

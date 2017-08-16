@@ -30,7 +30,6 @@
 #include "socketapi.h"
 #include "sslerrordialog.h"
 #include "theme.h"
-#include "utility.h"
 #include "clientproxy.h"
 #include "sharedialog.h"
 #include "accountmanager.h"
@@ -38,7 +37,7 @@
 #include "updater/ocupdater.h"
 #include "excludedfiles.h"
 #include "owncloudsetupwizard.h"
-#include "version.h"
+#include "common/version.h"
 
 #include "config.h"
 

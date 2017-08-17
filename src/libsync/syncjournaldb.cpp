@@ -494,8 +494,8 @@ bool SyncJournalDb::checkConnect()
 
     _setFileRecordQuery.reset(new SqlQuery(_db));
     if (_setFileRecordQuery->prepare("INSERT OR REPLACE INTO metadata "
-                                     "(phash, pathlen, path, inode, uid, gid, mode, modtime, type, md5, fileid, remotePerm, filesize, ignoredChildrenRemote, contentChecksum, contentChecksumTypeId) "
-                                     "VALUES (?1 , ?2, ?3 , ?4 , ?5 , ?6 , ?7,  ?8 , ?9 , ?10, ?11, ?12, ?13, ?14, ?15, ?16);")) {
+                                     "(phash, path, inode, modtime, type, md5, fileid, remotePerm, filesize, ignoredChildrenRemote, contentChecksum, contentChecksumTypeId) "
+                                     "VALUES (?1 , ?2, ?3 , ?4 , ?5 , ?6 , ?7,  ?8 , ?9 , ?10, ?11, ?12);")) {
         return sqlFail("prepare _setFileRecordQuery", *_setFileRecordQuery);
     }
 
@@ -883,9 +883,6 @@ bool SyncJournalDb::setFileRecord(const SyncJournalFileRecord &_record)
 
     qlonglong phash = getPHash(record._path);
     if (checkConnect()) {
-        QByteArray arr = record._path.toUtf8();
-        int plen = arr.length();
-
         QString etag(record._etag);
         if (etag.isEmpty())
             etag = "";
@@ -900,21 +897,17 @@ bool SyncJournalDb::setFileRecord(const SyncJournalFileRecord &_record)
         int contentChecksumTypeId = mapChecksumType(checksumType);
         _setFileRecordQuery->reset_and_clear_bindings();
         _setFileRecordQuery->bindValue(1, QString::number(phash));
-        _setFileRecordQuery->bindValue(2, plen);
-        _setFileRecordQuery->bindValue(3, record._path);
-        _setFileRecordQuery->bindValue(4, record._inode);
-        _setFileRecordQuery->bindValue(5, 0); // uid Not used
-        _setFileRecordQuery->bindValue(6, 0); // gid Not used
-        _setFileRecordQuery->bindValue(7, 0); // mode Not used
-        _setFileRecordQuery->bindValue(8, QString::number(Utility::qDateTimeToTime_t(record._modtime)));
-        _setFileRecordQuery->bindValue(9, QString::number(record._type));
-        _setFileRecordQuery->bindValue(10, etag);
-        _setFileRecordQuery->bindValue(11, fileId);
-        _setFileRecordQuery->bindValue(12, remotePerm);
-        _setFileRecordQuery->bindValue(13, record._fileSize);
-        _setFileRecordQuery->bindValue(14, record._serverHasIgnoredFiles ? 1 : 0);
-        _setFileRecordQuery->bindValue(15, checksum);
-        _setFileRecordQuery->bindValue(16, contentChecksumTypeId);
+        _setFileRecordQuery->bindValue(2, record._path);
+        _setFileRecordQuery->bindValue(3, record._inode);
+        _setFileRecordQuery->bindValue(4, QString::number(Utility::qDateTimeToTime_t(record._modtime)));
+        _setFileRecordQuery->bindValue(5, QString::number(record._type));
+        _setFileRecordQuery->bindValue(6, etag);
+        _setFileRecordQuery->bindValue(7, fileId);
+        _setFileRecordQuery->bindValue(8, remotePerm);
+        _setFileRecordQuery->bindValue(9, record._fileSize);
+        _setFileRecordQuery->bindValue(10, record._serverHasIgnoredFiles ? 1 : 0);
+        _setFileRecordQuery->bindValue(11, checksum);
+        _setFileRecordQuery->bindValue(12, contentChecksumTypeId);
 
         if (!_setFileRecordQuery->exec()) {
             return false;

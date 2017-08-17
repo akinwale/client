@@ -129,6 +129,9 @@ generate_export_header( ${CSYNC_LIBRARY}
 target_link_libraries(${CSYNC_LIBRARY} ${CSYNC_LINK_LIBRARIES})
 #target_link_libraries(${CSYNC_LIBRARY}_static ${CSYNC_LINK_LIBRARIES})
 
+find_package(Qt5Core REQUIRED)
+qt5_use_modules(${CSYNC_LIBRARY} Core)
+
 set_target_properties(
   ${CSYNC_LIBRARY}
     PROPERTIES

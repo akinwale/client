@@ -39,6 +39,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <config_csync.h>
+#include <QByteArray>
 
 enum csync_status_codes_e {
   CSYNC_STATUS_OK         = 0,
@@ -148,6 +149,48 @@ enum csync_ftw_type_e {
 
 // currently specified at https://github.com/owncloud/core/issues/8322 are 9 to 10
 #define REMOTE_PERM_BUF_SIZE 15
+
+typedef struct csync_file_stat_s csync_file_stat_t;
+
+struct csync_file_stat_s {
+  uint64_t phash;
+  time_t modtime;
+  int64_t size;
+  uint64_t inode;
+  enum csync_ftw_type_e type  : 4;
+  bool child_modified         : 1;
+  bool has_ignored_files      : 1; /* specify that a directory, or child directory contains ignored files */
+
+  QByteArray path;
+  QByteArray rename_path;
+  QByteArray etag;
+  QByteArray file_id;  /* the ownCloud file id is fixed width in ownCloud. */
+  QByteArray directDownloadUrl;
+  QByteArray directDownloadCookies;
+  QByteArray remotePerm;
+
+  // In the local tree, this can hold a checksum and its type if it is
+  //   computed during discovery for some reason.
+  // In the remote tree, this will have the server checksum, if available.
+  // In both cases, the format is "SHA1:baff".
+  QByteArray checksumHeader;
+
+  CSYNC_STATUS error_status;
+
+  enum csync_instructions_e instruction; /* u32 */
+
+  csync_file_stat_s()
+    : phash(0)
+    , modtime(0)
+    , size(0)
+    , inode(0)
+    , type(CSYNC_FTW_TYPE_SKIP)
+    , child_modified(false)
+    , has_ignored_files(false)
+    , error_status(CSYNC_STATUS_OK)
+    , instruction(CSYNC_INSTRUCTION_NONE)
+  { }
+};
 
 typedef struct csync_vio_file_stat_s csync_vio_file_stat_t;
 
@@ -304,8 +347,8 @@ typedef int (*csync_vio_stat_hook) (csync_vio_handle_t *dhhandle,
                                                               void *userdata);
 
 /* Compute the checksum of the given \a checksumTypeId for \a path. */
-typedef const char *(*csync_checksum_hook)(
-    const char *path, const char *otherChecksumHeader, void *userdata);
+typedef QByteArray (*csync_checksum_hook)(
+    const QByteArray &path, const QByteArray &otherChecksumHeader, void *userdata);
 
 /**
  * @brief Allocate a csync context.

@@ -35,6 +35,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <sqlite3.h>
+#include <map>
 
 #include "config_csync.h"
 #include "std/c_lib.h"
@@ -103,14 +104,15 @@ struct csync_s {
     int lastReturnValue;
   } statedb;
 
+  typedef std::map<QByteArray, std::unique_ptr<csync_file_stat_t>> FileMap;
   struct {
     char *uri;
-    c_rbtree_t *tree;
+    FileMap files;
     enum csync_replica_e type;
   } local;
 
   struct {
-    c_rbtree_t *tree;
+    FileMap files;
     enum csync_replica_e type;
     int  read_from_db;
     const char *root_perms; /* Permission of the root folder. (Since the root folder is not in the db tree, we need to keep a separate entry.) */

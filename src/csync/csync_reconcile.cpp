@@ -37,33 +37,28 @@
 
 /* Check if a file is ignored because one parent is ignored.
  * return the node of the ignored directoy if it's the case, or NULL if it is not ignored */
-static c_rbnode_t *_csync_check_ignored(c_rbtree_t *tree, const char *path, int pathlen) {
-    uint64_t h = 0;
-    c_rbnode_t *node = NULL;
-
+static csync_s::FileMap::iterator _csync_check_ignored(csync_s::FileMap *tree, const QByteArray &path) {
     /* compute the size of the parent directory */
-    int parentlen = pathlen - 1;
-    while (parentlen > 0 && path[parentlen] != '/') {
+    int parentlen = path.size() - 1;
+    while (parentlen > 0 && path.at(parentlen) != '/') {
         parentlen--;
     }
     if (parentlen <= 0) {
-        return NULL;
+        return tree->end();
     }
-
-    h = c_jhash64((uint8_t *) path, parentlen, 0);
-    node = c_rbtree_find(tree, &h);
-    if (node) {
-        csync_file_stat_t *n = (csync_file_stat_t*)node->data;
-        if (n->instruction == CSYNC_INSTRUCTION_IGNORE) {
+    QByteArray parentPath = path.left(parentlen);
+    csync_s::FileMap::iterator it = tree->find(parentPath);
+    if (it != tree->end()) {
+        if (it->second->instruction == CSYNC_INSTRUCTION_IGNORE) {
             /* Yes, we are ignored */
-            return node;
+            return it;
         } else {
             /* Not ignored */
-            return NULL;
+            return tree->end();
         }
     } else {
         /* Try if the parent itself is ignored */
-        return _csync_check_ignored(tree, path, parentlen);
+        return _csync_check_ignored(tree, parentPath);
     }
 }
 
@@ -83,7 +78,7 @@ static bool _csync_is_collision_safe_hash(const char *checksum_header)
 /**
  * The main function in the reconcile pass.
  *
- * It's called for each entry in the local and remote rbtrees by
+ * It's called for each entry in the local and remote files by
  * csync_reconcile()
  *
  * Before the reconcile phase the trees already know about changes
@@ -107,52 +102,38 @@ static bool _csync_is_collision_safe_hash(const char *checksum_header)
  * (timestamp is newer), it is not overwritten. If both files, on the
  * source and the destination, have been changed, the newer file wins.
  */
-static int _csync_merge_algorithm_visitor(void *obj, void *data) {
-    csync_file_stat_t *cur = NULL;
+static int _csync_merge_algorithm_visitor(csync_file_stat_t *cur, CSYNC * ctx) {
     csync_file_stat_t *other = NULL;
     std::unique_ptr<csync_file_stat_t> tmp;
-    uint64_t h = 0;
-    int len = 0;
 
-    CSYNC *ctx = NULL;
-    c_rbtree_t *tree = NULL;
-    c_rbnode_t *node = NULL;
-
-    cur = (csync_file_stat_t *) obj;
-    ctx = (CSYNC *) data;
+    csync_s::FileMap *other_tree = nullptr;
 
     /* we need the opposite tree! */
     switch (ctx->current) {
     case LOCAL_REPLICA:
-        tree = ctx->remote.tree;
+        other_tree = &ctx->remote.files;
         break;
     case REMOTE_REPLICA:
-        tree = ctx->local.tree;
+        other_tree = &ctx->local.files;
         break;
     default:
         break;
     }
 
-    node = c_rbtree_find(tree, &cur->phash);
+    csync_s::FileMap::iterator other_file_it = other_tree->find(cur->path);
 
-    if (!node) {
+    if (other_file_it == other_tree->end()) {
         /* Check the renamed path as well. */
-        char *renamed_path = csync_rename_adjust_path(ctx, cur->path);
-        if (renamed_path != cur->path) {
-            len = strlen( renamed_path );
-            h = c_jhash64((uint8_t *) renamed_path, len, 0);
-            node = c_rbtree_find(tree, &h);
-        }
-        SAFE_FREE(renamed_path);
+        other_file_it = other_tree->find(csync_rename_adjust_path(ctx, cur->path));
     }
-    if (!node) {
+    if (other_file_it == other_tree->end()) {
         /* Check if it is ignored */
-        node = _csync_check_ignored(tree, cur->path, cur->path.size());
+        other_file_it = _csync_check_ignored(other_tree, cur->path);
         /* If it is ignored, other->instruction will be  IGNORE so this one will also be ignored */
     }
 
     /* file only found on current replica */
-    if (node == NULL) {
+    if (other_file_it == other_tree->end()) {
         switch(cur->instruction) {
         /* file has been modified */
         case CSYNC_INSTRUCTION_EVAL:
@@ -187,20 +168,18 @@ static int _csync_merge_algorithm_visitor(void *obj, void *data) {
             }
 
             if( tmp ) {
-                len = strlen( tmp->path );
-                if( len > 0 ) {
-                    h = c_jhash64((uint8_t *) tmp->path.constData(), len, 0);
+                if( !tmp->path.isEmpty() ) {
                     /* First, check that the file is NOT in our tree (another file with the same name was added) */
-                    node = c_rbtree_find(ctx->current == REMOTE_REPLICA ? ctx->remote.tree : ctx->local.tree, &h);
-                    if (node) {
+                    csync_s::FileMap *our_tree = ctx->current == REMOTE_REPLICA ? &ctx->remote.files : &ctx->local.files;
+                    if (our_tree->find(tmp->path) != our_tree->end()) {
                         CSYNC_LOG(CSYNC_LOG_PRIORITY_TRACE, "Origin found in our tree : %s", tmp->path.constData());
                     } else {
                         /* Find the temporar file in the other tree. */
-                        node = c_rbtree_find(tree, &h);
-                        CSYNC_LOG(CSYNC_LOG_PRIORITY_TRACE, "PHash of temporary opposite (%s): %" PRIu64 " %s",
-                                tmp->path.constData() , h, node ? "found": "not found" );
-                        if (node) {
-                            other = (csync_file_stat_t*)node->data;
+                        other_file_it = other_tree->find(tmp->path);
+                        CSYNC_LOG(CSYNC_LOG_PRIORITY_TRACE, "Temporary opposite (%s) %s",
+                                tmp->path.constData() , other_file_it != other_tree->end() ? "found": "not found" );
+                        if (other_file_it != other_tree->end()) {
+                            other = other_file_it->second.get();
                         } else {
                             /* the renamed file could not be found in the opposite tree. That is because it
                             * is not longer existing there, maybe because it was renamed or deleted.
@@ -250,7 +229,7 @@ static int _csync_merge_algorithm_visitor(void *obj, void *data) {
         /*
      * file found on the other replica
      */
-        other = (csync_file_stat_t *) node->data;
+        other = other_file_it->second.get();
 
         switch (cur->instruction) {
         case CSYNC_INSTRUCTION_UPDATE_METADATA:
@@ -395,25 +374,27 @@ static int _csync_merge_algorithm_visitor(void *obj, void *data) {
 }
 
 int csync_reconcile_updates(CSYNC *ctx) {
-  int rc;
-  c_rbtree_t *tree = NULL;
+  csync_s::FileMap *tree = nullptr;
 
   switch (ctx->current) {
     case LOCAL_REPLICA:
-      tree = ctx->local.tree;
+      tree = &ctx->local.files;
       break;
     case REMOTE_REPLICA:
-      tree = ctx->remote.tree;
+      tree = &ctx->remote.files;
       break;
     default:
       break;
   }
 
-  rc = c_rbtree_walk(tree, (void *) ctx, _csync_merge_algorithm_visitor);
-  if( rc < 0 ) {
-    ctx->status_code = CSYNC_STATUS_RECONCILE_ERROR;
+  auto end = tree->end();
+  for (auto it = tree->begin(); it != end; ++it) {
+    if (_csync_merge_algorithm_visitor(it->second.get(), ctx) < 0) {
+      ctx->status_code = CSYNC_STATUS_RECONCILE_ERROR;
+      return -1;
+    }
   }
-  return rc;
+  return 0;
 }
 
 /* vim: set ts=8 sw=2 et cindent: */

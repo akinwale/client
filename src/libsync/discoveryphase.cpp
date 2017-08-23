@@ -73,10 +73,10 @@ bool DiscoveryJob::isInSelectiveSyncBlackList(const char *path) const
 
     // Also try to adjust the path if there was renames
     if (csync_rename_count(_csync_ctx)) {
-        QScopedPointer<char, QScopedPointerPodDeleter> adjusted(
-            csync_rename_adjust_path_source(_csync_ctx, path));
-        if (strcmp(adjusted.data(), path) != 0) {
-            return findPathInList(_selectiveSyncBlackList, QString::fromUtf8(adjusted.data()));
+        QByteArray pathArray = QByteArray::fromRawData(path, qstrlen(path));
+        QByteArray adjusted = csync_rename_adjust_path_source(_csync_ctx, pathArray);
+        if (adjusted != pathArray) {
+            return findPathInList(_selectiveSyncBlackList, QString::fromUtf8(adjusted));
         }
     }
 

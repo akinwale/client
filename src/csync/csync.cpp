@@ -51,42 +51,11 @@
 #include "csync_rename.h"
 #include "c_jhash.h"
 
-static int _key_cmp(const void *key, const void *data) {
-  uint64_t a;
-  csync_file_stat_t *b;
-
-  a = *(uint64_t *) (key);
-  b = (csync_file_stat_t *) data;
-
-  if (a < b->phash) {
-    return -1;
-  } else if (a > b->phash) {
-    return 1;
-  }
-
-  return 0;
-}
-
-static int _data_cmp(const void *key, const void *data) {
-  csync_file_stat_t *a, *b;
-
-  a = (csync_file_stat_t *) key;
-  b = (csync_file_stat_t *) data;
-
-  if (a->phash < b->phash) {
-    return -1;
-  } else if (a->phash > b->phash) {
-    return 1;
-  }
-
-  return 0;
-}
-
 void csync_create(CSYNC **csync, const char *local) {
   CSYNC *ctx;
   size_t len = 0;
 
-  ctx = (CSYNC*)c_malloc(sizeof(CSYNC));
+  ctx = new CSYNC{};
 
   ctx->status_code = CSYNC_STATUS_OK;
 
@@ -120,9 +89,6 @@ void csync_init(CSYNC *ctx, const char *db_file) {
 
   SAFE_FREE(ctx->statedb.file);
   ctx->statedb.file = c_strdup(db_file);
-
-  c_rbtree_create(&ctx->local.tree, _key_cmp, _data_cmp);
-  c_rbtree_create(&ctx->remote.tree, _key_cmp, _data_cmp);
 
   ctx->remote.root_perms = 0;
 
@@ -173,7 +139,7 @@ int csync_update(CSYNC *ctx) {
 
   CSYNC_LOG(CSYNC_LOG_PRIORITY_DEBUG,
             "Update detection for local replica took %.2f seconds walking %zu files.",
-            c_secdiff(finish, start), c_rbtree_size(ctx->local.tree));
+            c_secdiff(finish, start), ctx->local.files.size());
   csync_memstat_check();
 
   /* update detection for remote replica */
@@ -194,7 +160,7 @@ int csync_update(CSYNC *ctx) {
   CSYNC_LOG(CSYNC_LOG_PRIORITY_DEBUG,
             "Update detection for remote replica took %.2f seconds "
             "walking %zu files.",
-            c_secdiff(finish, start), c_rbtree_size(ctx->remote.tree));
+            c_secdiff(finish, start), ctx->remote.files.size());
   csync_memstat_check();
 
   ctx->status |= CSYNC_STATUS_UPDATE;
@@ -233,7 +199,7 @@ int csync_reconcile(CSYNC *ctx) {
 
   CSYNC_LOG(CSYNC_LOG_PRIORITY_DEBUG,
       "Reconciliation for local replica took %.2f seconds visiting %zu files.",
-      c_secdiff(finish, start), c_rbtree_size(ctx->local.tree));
+      c_secdiff(finish, start), ctx->local.files.size());
 
   if (rc < 0) {
       if (!CSYNC_STATUS_IS_OK(ctx->status_code)) {
@@ -254,7 +220,7 @@ int csync_reconcile(CSYNC *ctx) {
 
   CSYNC_LOG(CSYNC_LOG_PRIORITY_DEBUG,
       "Reconciliation for remote replica took %.2f seconds visiting %zu files.",
-      c_secdiff(finish, start), c_rbtree_size(ctx->remote.tree));
+      c_secdiff(finish, start), ctx->remote.files.size());
 
   if (rc < 0) {
       if (!CSYNC_STATUS_IS_OK(ctx->status_code)) {
@@ -275,17 +241,11 @@ out:
 /*
  * local visitor which calls the user visitor with repacked stat info.
  */
-static int _csync_treewalk_visitor(void *obj, void *data) {
+static int _csync_treewalk_visitor(csync_file_stat_t *cur, CSYNC * ctx) {
     int rc = 0;
-    csync_file_stat_t *cur         = NULL;
-    CSYNC *ctx                     = NULL;
     csync_treewalk_visit_func *visitor   = NULL;
     _csync_treewalk_context *twctx = NULL;
-    c_rbtree_t *other_tree = NULL;
-    c_rbnode_t *other_node = NULL;
-
-    cur = (csync_file_stat_t *) obj;
-    ctx = (CSYNC *) data;
+    csync_s::FileMap *other_tree = nullptr;
 
     if (ctx == NULL) {
       return -1;
@@ -294,51 +254,33 @@ static int _csync_treewalk_visitor(void *obj, void *data) {
     /* we need the opposite tree! */
     switch (ctx->current) {
     case LOCAL_REPLICA:
-        other_tree = ctx->remote.tree;
+        other_tree = &ctx->remote.files;
         break;
     case REMOTE_REPLICA:
-        other_tree = ctx->local.tree;
+        other_tree = &ctx->local.files;
         break;
     default:
         break;
     }
 
-    other_node = c_rbtree_find(other_tree, &cur->phash);
+    csync_s::FileMap::const_iterator other_file_it = other_tree->find(cur->path);
 
-    if (!other_node) {
+    if (other_file_it == other_tree->cend()) {
         /* Check the renamed path as well. */
-        int len;
-        uint64_t h = 0;
-        char *renamed_path = csync_rename_adjust_path(ctx, cur->path);
-
-        if (!c_streq(renamed_path, cur->path)) {
-            len = strlen( renamed_path );
-            h = c_jhash64((uint8_t *) renamed_path, len, 0);
-            other_node = c_rbtree_find(other_tree, &h);
-        }
-        SAFE_FREE(renamed_path);
+        QByteArray renamed_path = csync_rename_adjust_path(ctx, cur->path);
+        if (renamed_path != cur->path)
+            other_file_it = other_tree->find(renamed_path);
     }
 
-    if (!other_node) {
+    if (other_file_it == other_tree->cend()) {
         /* Check the source path as well. */
-        int len;
-        uint64_t h = 0;
-        char *renamed_path = csync_rename_adjust_path_source(ctx, cur->path);
-
-        if (!c_streq(renamed_path, cur->path)) {
-            len = strlen( renamed_path );
-            h = c_jhash64((uint8_t *) renamed_path, len, 0);
-            other_node = c_rbtree_find(other_tree, &h);
-        }
-        SAFE_FREE(renamed_path);
+        QByteArray renamed_path = csync_rename_adjust_path_source(ctx, cur->path);
+        if (renamed_path != cur->path)
+            other_file_it = other_tree->find(renamed_path);
     }
 
-    csync_file_stat_t *other = other_node ? (csync_file_stat_t*)other_node->data : NULL;
+    csync_file_stat_t *other = (other_file_it != other_tree->cend()) ? other_file_it->second.get() : NULL;
 
-    if (obj == NULL || data == NULL) {
-      ctx->status_code = CSYNC_STATUS_PARAM_ERROR;
-      return -1;
-    }
     ctx->status_code = CSYNC_STATUS_OK;
 
     twctx = (_csync_treewalk_context*) ctx->callbacks.userdata;
@@ -370,28 +312,25 @@ static int _csync_treewalk_visitor(void *obj, void *data) {
  * which calls the local _csync_treewalk_visitor in this module.
  * The user visitor is called from there.
  */
-static int _csync_walk_tree(CSYNC *ctx, c_rbtree_t *tree, csync_treewalk_visit_func *visitor, int filter)
+static int _csync_walk_tree(CSYNC *ctx, csync_s::FileMap *tree, csync_treewalk_visit_func *visitor, int filter)
 {
     _csync_treewalk_context tw_ctx;
-    int rc = -1;
+    int rc = 0;
 
-    if (ctx == NULL) {
-        errno = EBADF;
-        return rc;
-    }
-
-    if (visitor == NULL || tree == NULL) {
-        ctx->status_code = CSYNC_STATUS_PARAM_ERROR;
-        return rc;
-    }
-    
     tw_ctx.userdata = ctx->callbacks.userdata;
     tw_ctx.user_visitor = visitor;
     tw_ctx.instruction_filter = filter;
 
     ctx->callbacks.userdata = &tw_ctx;
 
-    rc = c_rbtree_walk(tree, (void*) ctx, _csync_treewalk_visitor);
+    auto end = tree->end();
+    for (auto it = tree->begin(); it != end; ++it) {
+        if (_csync_treewalk_visitor(it->second.get(), ctx) < 0) {
+          rc = -1;
+          break;
+        }
+    }
+
     if( rc < 0 ) {
       if( ctx->status_code == CSYNC_STATUS_OK )
           ctx->status_code = csync_errno_to_status(errno, CSYNC_STATUS_TREE_ERROR);
@@ -406,18 +345,9 @@ static int _csync_walk_tree(CSYNC *ctx, c_rbtree_t *tree, csync_treewalk_visit_f
  */
 int csync_walk_remote_tree(CSYNC *ctx,  csync_treewalk_visit_func *visitor, int filter)
 {
-    c_rbtree_t *tree = NULL;
-    int rc = -1;
-
-    if(ctx != NULL) {
-        ctx->status_code = CSYNC_STATUS_OK;
-        ctx->current = REMOTE_REPLICA;
-        tree = ctx->remote.tree;
-    }
-
-    /* all error handling in the called function */
-    rc = _csync_walk_tree(ctx, tree, visitor, filter);
-    return rc;
+    ctx->status_code = CSYNC_STATUS_OK;
+    ctx->current = REMOTE_REPLICA;
+    return _csync_walk_tree(ctx, &ctx->remote.files, visitor, filter);
 }
 
 /*
@@ -425,45 +355,20 @@ int csync_walk_remote_tree(CSYNC *ctx,  csync_treewalk_visit_func *visitor, int 
  */
 int csync_walk_local_tree(CSYNC *ctx, csync_treewalk_visit_func *visitor, int filter)
 {
-    c_rbtree_t *tree = NULL;
-    int rc = -1;
-
-    if (ctx != NULL) {
-        ctx->status_code = CSYNC_STATUS_OK;
-        ctx->current = LOCAL_REPLICA;
-        tree = ctx->local.tree;
-    }
-
-    /* all error handling in the called function */
-    rc = _csync_walk_tree(ctx, tree, visitor, filter);
-    return rc;  
-}
-
-static void _tree_destructor(void *data) {
-  csync_file_stat_t *freedata = NULL;
-
-  freedata = (csync_file_stat_t *) data;
-  delete freedata;
+    ctx->status_code = CSYNC_STATUS_OK;
+    ctx->current = LOCAL_REPLICA;
+    return _csync_walk_tree(ctx, &ctx->local.files, visitor, filter);
 }
 
 /* reset all the list to empty.
  * used by csync_commit and csync_destroy */
 static void _csync_clean_ctx(CSYNC *ctx)
 {
-    /* destroy the rbtrees */
-    if (c_rbtree_size(ctx->local.tree) > 0) {
-        c_rbtree_destroy(ctx->local.tree, _tree_destructor);
-    }
-
-    if (c_rbtree_size(ctx->remote.tree) > 0) {
-        c_rbtree_destroy(ctx->remote.tree, _tree_destructor);
-    }
-
     csync_rename_destroy(ctx);
 
     /* free memory */
-    c_rbtree_free(ctx->local.tree);
-    c_rbtree_free(ctx->remote.tree);
+    ctx->local.files.clear();
+    ctx->remote.files.clear();
 
     SAFE_FREE(ctx->remote.root_perms);
 }
@@ -491,9 +396,8 @@ int csync_commit(CSYNC *ctx) {
   ctx->db_is_empty = false;
 
 
-  /* Create new trees */
-  c_rbtree_create(&ctx->local.tree, _key_cmp, _data_cmp);
-  c_rbtree_create(&ctx->remote.tree, _key_cmp, _data_cmp);
+  ctx->local.files.clear();
+  ctx->remote.files.clear();
 
 
   ctx->status = CSYNC_STATUS_INIT;
@@ -525,7 +429,7 @@ int csync_destroy(CSYNC *ctx) {
   SAFE_FREE(ctx->local.uri);
   SAFE_FREE(ctx->error_string);
 
-  SAFE_FREE(ctx);
+  delete ctx;
 
   return rc;
 }

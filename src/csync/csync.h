@@ -153,7 +153,6 @@ enum csync_ftw_type_e {
 typedef struct csync_file_stat_s csync_file_stat_t;
 
 struct csync_file_stat_s {
-  uint64_t phash;
   time_t modtime;
   int64_t size;
   uint64_t inode;
@@ -182,8 +181,7 @@ struct csync_file_stat_s {
   enum csync_instructions_e instruction; /* u32 */
 
   csync_file_stat_s()
-    : phash(0)
-    , modtime(0)
+    : modtime(0)
     , size(0)
     , inode(0)
     , type(CSYNC_FTW_TYPE_SKIP)

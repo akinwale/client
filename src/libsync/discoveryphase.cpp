@@ -528,9 +528,10 @@ void DiscoveryMainThread::singleDirectoryJobResultSlot()
     _currentDiscoveryDirectoryResult->list = _singleDirJob->takeResults();
     _currentDiscoveryDirectoryResult->code = 0;
     _currentDiscoveryDirectoryResult->listIndex = 0;
-    _currentDiscoveryDirectoryResult = 0; // the sync thread owns it now
 
     qCDebug(lcDiscovery) << "Have" << _currentDiscoveryDirectoryResult->list.size() << "results for " << _currentDiscoveryDirectoryResult->path;
+
+    _currentDiscoveryDirectoryResult = 0; // the sync thread owns it now
 
     if (!_firstFolderProcessed) {
         _firstFolderProcessed = true;

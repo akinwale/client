@@ -567,7 +567,6 @@ int SyncEngine::treewalkFile(csync_file_stat_t *file, csync_file_stat_t *other, 
         dir = SyncFileItem::None;
         // For directories, metadata-only updates will be done after all their files are propagated.
         if (!isDirectory) {
-            item->_isDirectory = isDirectory;
             emit syncItemDiscovered(*item);
 
             // Update the database now already:  New remote fileid or Etag or RemotePerm
@@ -658,7 +657,6 @@ int SyncEngine::treewalkFile(csync_file_stat_t *file, csync_file_stat_t *other, 
     }
 
     item->_direction = dir;
-    item->_isDirectory = isDirectory;
     if (instruction != CSYNC_INSTRUCTION_NONE) {
         // check for blacklisting of this item.
         // if the item is on blacklist, the instruction was set to ERROR
@@ -1209,7 +1207,7 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
             (*it)->_status = SyncFileItem::FileIgnored;
             (*it)->_errorString = tr("Ignored because of the \"choose what to sync\" blacklist");
 
-            if ((*it)->_isDirectory) {
+            if ((*it)->isDirectory()) {
                 auto it_base = it;
                 for (SyncFileItemVector::iterator it_next = it + 1; it_next != syncItems.end() && (*it_next)->_file.startsWith(path); ++it_next) {
                     it = it_next;
@@ -1234,7 +1232,7 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
                             if (parent_it == syncItems.end() || (*parent_it)->destination() != parentDir) {
                                 break;
                             }
-                            ASSERT((*parent_it)->_isDirectory);
+                            ASSERT((*parent_it)->isDirectory());
                             if ((*parent_it)->_instruction != CSYNC_INSTRUCTION_IGNORE) {
                                 break; // already changed
                             }
@@ -1262,7 +1260,7 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
             if (perms.isNull()) {
                 // No permissions set
                 break;
-            } else if ((*it)->_isDirectory && !perms.contains("K")) {
+            } else if ((*it)->isDirectory() && !perms.contains("K")) {
                 qCWarning(lcEngine) << "checkForPermission: ERROR" << (*it)->_file;
                 (*it)->_instruction = CSYNC_INSTRUCTION_ERROR;
                 (*it)->_status = SyncFileItem::NormalError;
@@ -1284,7 +1282,7 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
                     (*it)->_errorString = tr("Not allowed because you don't have permission to add parent folder");
                 }
 
-            } else if (!(*it)->_isDirectory && !perms.contains("C")) {
+            } else if (!(*it)->isDirectory() && !perms.contains("C")) {
                 qCWarning(lcEngine) << "checkForPermission: ERROR" << (*it)->_file;
                 (*it)->_instruction = CSYNC_INSTRUCTION_ERROR;
                 (*it)->_status = SyncFileItem::NormalError;
@@ -1330,7 +1328,7 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
                 (*it)->_isRestoration = true;
                 (*it)->_errorString = tr("Not allowed to remove, restoring");
 
-                if ((*it)->_isDirectory) {
+                if ((*it)->isDirectory()) {
                     // restore all sub items
                     for (SyncFileItemVector::iterator it_next = it + 1;
                          it_next != syncItems.end() && (*it_next)->_file.startsWith(path); ++it_next) {
@@ -1357,7 +1355,7 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
                 // not delete permission we fast forward the iterator and leave the
                 // delete jobs intact. It is not physically tried to remove this files
                 // underneath, propagator sees that.
-                if ((*it)->_isDirectory) {
+                if ((*it)->isDirectory()) {
                     // put a more descriptive message if a top level share dir really is removed.
                     if (it == syncItems.begin() || !(path.startsWith((*(it - 1))->_file))) {
                         (*it)->_errorString = tr("Local files and share folder removed.");
@@ -1387,9 +1385,9 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
             if (isRename || destPerms.isNull()) {
                 // no need to check for the destination dir permission
                 destinationOK = true;
-            } else if ((*it)->_isDirectory && !destPerms.contains("K")) {
+            } else if ((*it)->isDirectory() && !destPerms.contains("K")) {
                 destinationOK = false;
-            } else if (!(*it)->_isDirectory && !destPerms.contains("C")) {
+            } else if (!(*it)->isDirectory() && !destPerms.contains("C")) {
                 destinationOK = false;
             }
 
@@ -1410,7 +1408,7 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
 #ifdef OWNCLOUD_RESTORE_RENAME /* We don't like the idea of renaming behind user's back, as the user may be working with the files */
             if (!sourceOK && (!destinationOK || isRename)
                 // (not for directory because that's more complicated with the contents that needs to be adjusted)
-                && !(*it)->_isDirectory) {
+                && !(*it)->isDirectory()) {
                 // Both the source and the destination won't allow move.  Move back to the original
                 std::swap((*it)->_file, (*it)->_renameTarget);
                 (*it)->_direction = SyncFileItem::Down;
@@ -1438,7 +1436,7 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
                 _anotherSyncNeeded = ImmediateFollowUp;
 
 
-                if ((*it)->_isDirectory) {
+                if ((*it)->isDirectory()) {
                     for (SyncFileItemVector::iterator it_next = it + 1;
                          it_next != syncItems.end() && (*it_next)->destination().startsWith(path); ++it_next) {
                         it = it_next;

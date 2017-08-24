@@ -125,7 +125,7 @@ void PropagateLocalRemove::start()
         return;
     }
 
-    if (_item->_isDirectory) {
+    if (_item->isDirectory()) {
         if (QDir(filename).exists() && !removeRecursively(QString())) {
             done(SyncFileItem::NormalError, _error);
             return;
@@ -139,7 +139,7 @@ void PropagateLocalRemove::start()
         }
     }
     propagator()->reportProgress(*_item, 0);
-    propagator()->_journal->deleteFileRecord(_item->_originalFile, _item->_isDirectory);
+    propagator()->_journal->deleteFileRecord(_item->_originalFile, _item->isDirectory());
     propagator()->_journal->commit("Local remove");
     done(SyncFileItem::Success);
 }
@@ -249,7 +249,7 @@ void PropagateLocalRename::start()
         record._checksumHeader = oldRecord._checksumHeader;
     }
 
-    if (!_item->_isDirectory) { // Directories are saved at the end
+    if (!_item->isDirectory()) { // Directories are saved at the end
         if (!propagator()->_journal->setFileRecord(record)) {
             done(SyncFileItem::FatalError, tr("Error writing metadata to the database"));
             return;

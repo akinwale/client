@@ -85,7 +85,6 @@ public:
     SyncFileItem()
         : _type(UnknownType)
         , _direction(None)
-        , _isDirectory(false)
         , _serverHasIgnoredFiles(false)
         , _hasBlacklistEntry(false)
         , _errorMayBeBlacklisted(false)
@@ -154,6 +153,11 @@ public:
         return _file.isEmpty();
     }
 
+    bool isDirectory() const
+    {
+        return _type == SyncFileItem::Directory;
+    }
+
     /**
      * True if the item had any kind of error.
      *
@@ -175,7 +179,6 @@ public:
     QString _renameTarget;
     Type _type BITFIELD(3);
     Direction _direction BITFIELD(3);
-    bool _isDirectory BITFIELD(1);
     bool _serverHasIgnoredFiles BITFIELD(1);
 
     /// Whether there's an entry in the blacklist table.

@@ -1301,7 +1301,8 @@ void SyncEngine::checkForPermission(SyncFileItemVector &syncItems)
                 (*it)->_instruction = CSYNC_INSTRUCTION_CONFLICT;
                 (*it)->_direction = SyncFileItem::Down;
                 (*it)->_isRestoration = true;
-                // take the things to write to the db from the "other" node (i.e: info from server)
+                // Take the things to write to the db from the "other" node (i.e: info from server).
+                // Do a lookup into the csync remote tree to get the metadata we need to restore.
                 ASSERT(_csync_ctx->status != CSYNC_STATUS_INIT);
                 auto csyncIt = _csync_ctx->remote.files.find((*it)->_file.toUtf8());
                 if (csyncIt != _csync_ctx->remote.files.end()) {

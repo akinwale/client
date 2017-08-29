@@ -193,8 +193,6 @@ struct csync_file_stat_s {
   { }
 };
 
-void OCSYNC_EXPORT csync_vio_set_file_id(char* dst, const char *src );
-
 
 /**
  * csync handle

@@ -294,7 +294,6 @@ set_target_properties( ${APPLICATION_EXECUTABLE} PROPERTIES
 	INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}/${APPLICATION_EXECUTABLE}" )
 
 target_link_libraries( ${APPLICATION_EXECUTABLE} ${QT_LIBRARIES} )
-target_link_libraries( ${APPLICATION_EXECUTABLE} common )
 target_link_libraries( ${APPLICATION_EXECUTABLE} ${synclib_NAME} )
 target_link_libraries( ${APPLICATION_EXECUTABLE} updater )
 target_link_libraries( ${APPLICATION_EXECUTABLE} ${OS_SPECIFIC_LINK_LIBRARIES} )

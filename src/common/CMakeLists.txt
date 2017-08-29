@@ -7,6 +7,15 @@ set(common_SOURCES
 )
 
 add_library(common STATIC ${common_SOURCES})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+# Hack! Use the same file and macro name as csync so that when csync
+# includes this library statically, it will use the "export" declspec
+# rather than the "import".
+generate_export_header( common
+  EXPORT_MACRO_NAME OCSYNC_EXPORT
+  EXPORT_FILE_NAME ocsynclib.h
+)
 
 find_package(Qt5Core REQUIRED)
 

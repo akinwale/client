@@ -50,6 +50,7 @@ set(CSYNC_LIBRARY
 )
 
 set(CSYNC_LINK_LIBRARIES
+  common
   ${CSTDLIB_LIBRARY}
   ${CSYNC_REQUIRED_LIBRARIES}
   ${SQLITE3_LIBRARIES}
@@ -120,7 +121,6 @@ add_library(${CSYNC_LIBRARY} SHARED ${csync_SRCS})
 #add_library(${CSYNC_LIBRARY}_static STATIC ${csync_SRCS})
 
 generate_export_header( ${CSYNC_LIBRARY}
-  BASE_NAME ${CSYNC_LIBRARY}
   EXPORT_MACRO_NAME OCSYNC_EXPORT
   EXPORT_FILE_NAME ocsynclib.h
 )

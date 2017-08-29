@@ -13,7 +13,7 @@ include_directories(
 include_directories(${CHECK_INCLUDE_DIRS})
 # create test library
 add_library(${TORTURE_LIBRARY} STATIC torture.c cmdline.c)
-target_link_libraries(${TORTURE_LIBRARY} ${CMOCKA_LIBRARIES} common ${CSYNC_LIBRARY} ${CSTDLIB_LIBRARY})
+target_link_libraries(${TORTURE_LIBRARY} ${CMOCKA_LIBRARIES} ${CSYNC_LIBRARY} ${CSTDLIB_LIBRARY})
 
 set(TEST_TARGET_LIBRARIES ${TORTURE_LIBRARY})
 

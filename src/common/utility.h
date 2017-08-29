@@ -2,20 +2,25 @@
  * Copyright (C) by Klaas Freitag <freitag@owncloud.com>
  * Copyright (C) by Daniel Molkentin <danimo@owncloud.com>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
- * for more details.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#include "ocsynclib.h"
 #include <QString>
 #include <QByteArray>
 #include <QDateTime>
@@ -35,22 +40,22 @@ Q_DECLARE_LOGGING_CATEGORY(lcUtility)
  *  @{
  */
 namespace Utility {
-    void sleep(int sec);
-    void usleep(int usec);
-    QString formatFingerprint(const QByteArray &, bool colonSeparated = true);
-    void setupFavLink(const QString &folder);
-    bool writeRandomFile(const QString &fname, int size = -1);
-    QString octetsToString(qint64 octets);
-    QByteArray userAgentString();
-    bool hasLaunchOnStartup(const QString &appName);
-    void setLaunchOnStartup(const QString &appName, const QString &guiName, bool launch);
+    OCSYNC_EXPORT void sleep(int sec);
+    OCSYNC_EXPORT void usleep(int usec);
+    OCSYNC_EXPORT QString formatFingerprint(const QByteArray &, bool colonSeparated = true);
+    OCSYNC_EXPORT void setupFavLink(const QString &folder);
+    OCSYNC_EXPORT bool writeRandomFile(const QString &fname, int size = -1);
+    OCSYNC_EXPORT QString octetsToString(qint64 octets);
+    OCSYNC_EXPORT QByteArray userAgentString();
+    OCSYNC_EXPORT bool hasLaunchOnStartup(const QString &appName);
+    OCSYNC_EXPORT void setLaunchOnStartup(const QString &appName, const QString &guiName, bool launch);
 
     /**
      * Return the amount of free space available.
      *
      * \a path must point to a directory
      */
-    qint64 freeDiskSpace(const QString &path);
+    OCSYNC_EXPORT qint64 freeDiskSpace(const QString &path);
 
     /**
      * @brief compactFormatDouble - formats a double value human readable.
@@ -60,14 +65,14 @@ namespace Utility {
      * @param unit an optional unit that is appended if present.
      * @return the formatted string.
      */
-    QString compactFormatDouble(double value, int prec, const QString &unit = QString::null);
+    OCSYNC_EXPORT QString compactFormatDouble(double value, int prec, const QString &unit = QString::null);
 
     // porting methods
-    QString escape(const QString &);
+    OCSYNC_EXPORT QString escape(const QString &);
 
     // conversion function QDateTime <-> time_t   (because the ones builtin work on only unsigned 32bit)
-    QDateTime qDateTimeFromTime_t(qint64 t);
-    qint64 qDateTimeToTime_t(const QDateTime &t);
+    OCSYNC_EXPORT QDateTime qDateTimeFromTime_t(qint64 t);
+    OCSYNC_EXPORT qint64 qDateTimeToTime_t(const QDateTime &t);
 
     /**
      * @brief Convert milliseconds duration to human readable string.
@@ -80,8 +85,8 @@ namespace Utility {
      * durationToDescriptiveString2 uses two units where possible, so
      * "5 minutes 43 seconds" or "1 month 3 days".
      */
-    QString durationToDescriptiveString1(quint64 msecs);
-    QString durationToDescriptiveString2(quint64 msecs);
+    OCSYNC_EXPORT QString durationToDescriptiveString1(quint64 msecs);
+    OCSYNC_EXPORT QString durationToDescriptiveString2(quint64 msecs);
 
     /**
      * @brief hasDarkSystray - determines whether the systray is dark or light.
@@ -93,40 +98,40 @@ namespace Utility {
      *
      * @return bool which is true for systems with dark systray.
      */
-    bool hasDarkSystray();
+    OCSYNC_EXPORT bool hasDarkSystray();
 
     // convenience OS detection methods
-    bool isWindows();
-    bool isMac();
-    bool isUnix();
-    bool isLinux(); // use with care
-    bool isBSD(); // use with care, does not match OS X
+    inline bool isWindows();
+    inline bool isMac();
+    inline bool isUnix();
+    inline bool isLinux(); // use with care
+    inline bool isBSD(); // use with care, does not match OS X
 
-    QString platformName();
+    OCSYNC_EXPORT QString platformName();
     // crash helper for --debug
-    void crash();
+    OCSYNC_EXPORT void crash();
 
     // Case preserving file system underneath?
     // if this function returns true, the file system is case preserving,
     // that means "test" means the same as "TEST" for filenames.
     // if false, the two cases are two different files.
-    bool fsCasePreserving();
+    OCSYNC_EXPORT bool fsCasePreserving();
 
     // Check if two pathes that MUST exist are equal. This function
     // uses QDir::canonicalPath() to judge and cares for the systems
     // case sensitivity.
-    bool fileNamesEqual(const QString &fn1, const QString &fn2);
+    OCSYNC_EXPORT bool fileNamesEqual(const QString &fn1, const QString &fn2);
 
     // Call the given command with the switch --version and rerun the first line
     // of the output.
     // If command is empty, the function calls the running application which, on
     // Linux, might have changed while this one is running.
     // For Mac and Windows, it returns QString()
-    QByteArray versionOfInstalledBinary(const QString &command = QString());
+    OCSYNC_EXPORT QByteArray versionOfInstalledBinary(const QString &command = QString());
 
-    QString fileNameForGuiUse(const QString &fName);
+    OCSYNC_EXPORT QString fileNameForGuiUse(const QString &fName);
 
-    QByteArray normalizeEtag(QByteArray etag);
+    OCSYNC_EXPORT QByteArray normalizeEtag(QByteArray etag);
 
     /**
      * @brief timeAgoInWords - human readable time span
@@ -136,9 +141,9 @@ namespace Utility {
      *
      * If the second parameter is ommitted, the current time is used.
      */
-    QString timeAgoInWords(const QDateTime &dt, const QDateTime &from = QDateTime());
+    OCSYNC_EXPORT QString timeAgoInWords(const QDateTime &dt, const QDateTime &from = QDateTime());
 
-    class StopWatch
+    class OCSYNC_EXPORT StopWatch
     {
     private:
         QMap<QString, quint64> _lapTimes;
@@ -160,13 +165,63 @@ namespace Utility {
     /**
      * @brief Sort a QStringList in a way that's appropriate for filenames
      */
-    void sortFilenames(QStringList &fileNames);
+    OCSYNC_EXPORT void sortFilenames(QStringList &fileNames);
 
     /** Appends concatPath and queryItems to the url */
-    QUrl concatUrlPath(
+    OCSYNC_EXPORT QUrl concatUrlPath(
         const QUrl &url, const QString &concatPath,
         const QList<QPair<QString, QString>> &queryItems = (QList<QPair<QString, QString>>()));
+
+    /**  Returns a new settings pre-set in a specific group.  The Settings will be created
+         with the given parent. If no parent is specified, the caller must destroy the settings */
+    OCSYNC_EXPORT std::unique_ptr<QSettings> settingsWithGroup(const QString &group, QObject *parent = 0);
 }
 /** @} */ // \addtogroup
+
+inline bool Utility::isWindows()
+{
+#ifdef Q_OS_WIN
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline bool Utility::isMac()
+{
+#ifdef Q_OS_MAC
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline bool Utility::isUnix()
+{
+#ifdef Q_OS_UNIX
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline bool Utility::isLinux()
+{
+#if defined(Q_OS_LINUX)
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline bool Utility::isBSD()
+{
+#if defined(Q_OS_FREEBSD) || defined(Q_OS_NETBSD) || defined(Q_OS_OPENBSD)
+    return true;
+#else
+    return false;
+#endif
+}
+
 }
 #endif // UTILITY_H

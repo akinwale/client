@@ -2,15 +2,19 @@
  * Copyright (C) by Klaas Freitag <freitag@owncloud.com>
  * Copyright (C) by Daniel Molkentin <danimo@owncloud.com>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
- * for more details.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "config.h"
 
@@ -401,51 +405,6 @@ bool Utility::hasDarkSystray()
     return hasDarkSystray_private();
 }
 
-
-bool Utility::isWindows()
-{
-#ifdef Q_OS_WIN
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool Utility::isMac()
-{
-#ifdef Q_OS_MAC
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool Utility::isUnix()
-{
-#ifdef Q_OS_UNIX
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool Utility::isLinux()
-{
-#if defined(Q_OS_LINUX)
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool Utility::isBSD()
-{
-#if defined(Q_OS_FREEBSD) || defined(Q_OS_NETBSD) || defined(Q_OS_OPENBSD)
-    return true;
-#else
-    return false;
-#endif
-}
 
 QString Utility::platformName()
 {
